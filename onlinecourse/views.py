@@ -138,6 +138,13 @@ def submit(request, course_id):
     return HttpResponseRedirect(reverse('onlinecourse:show_exam_result', args=(course.id, submission.id,)))
 
 
+def extract_answers(request):
+    choices = []
+    for key, value in request.POST.items():
+        if key.startswith('choice_'):
+            _, choice_id = key.split('_')
+            choices.append(int(choice_id))
+    return choices
 
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
 # you may implement it based on the following logic:
@@ -156,7 +163,7 @@ def show_exam_result(request, course_id, submission_id):
     total_score = 0
 
     for choice in selected_choices:
-        if choice.is_correct:
+        if choice.correct:
             total_score += 1
 
     context = {
@@ -165,4 +172,4 @@ def show_exam_result(request, course_id, submission_id):
         'total_score': total_score,
     }
 
-    return render(request, 'onlinecourse/exam_result.html', context)
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
