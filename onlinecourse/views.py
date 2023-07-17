@@ -1,7 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
-# <HINT> Import any new Models here
-from .models import Course, Enrollment
+from .models import Course, Enrollment, Question, Choice, Submission
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -113,6 +112,7 @@ def enroll(request, course_id):
 #def submit(request, course_id):
 
 
+
 # <HINT> A example method to collect the selected choices from the exam form from the request object
 #def extract_answers(request):
 #    submitted_anwsers = []
@@ -122,6 +122,21 @@ def enroll(request, course_id):
 #            choice_id = int(value)
 #            submitted_anwsers.append(choice_id)
 #    return submitted_anwsers
+def submit(request, course_id):
+    course = get_object_or_404(Course, pk=course_id)
+    user = request.user
+    enrollment = get_object_or_404(Enrollment, user=user, course=course)
+    
+    submission = Submission.objects.create(enrollment=enrollment)
+    
+    selected_choices = extract_answers(request)
+    
+    for choice_id in selected_choices:
+        choice = get_object_or_404(Choice, pk=choice_id)
+        submission.choices.add(choice)
+
+    return HttpResponseRedirect(reverse('onlinecourse:show_exam_result', args=(course.id, submission.id,)))
+
 
 
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
@@ -132,5 +147,22 @@ def enroll(request, course_id):
         # Calculate the total score
 #def show_exam_result(request, course_id, submission_id):
 
+def show_exam_result(request, course_id, submission_id):
+    course = get_object_or_404(Course, pk=course_id)
+    submission = get_object_or_404(Submission, pk=submission_id)
+    
+    selected_choices = submission.choices.all()
+    
+    total_score = 0
 
+    for choice in selected_choices:
+        if choice.is_correct:
+            total_score += 1
 
+    context = {
+        'course': course,
+        'submission': submission,
+        'total_score': total_score,
+    }
+
+    return render(request, 'onlinecourse/exam_result.html', context)
